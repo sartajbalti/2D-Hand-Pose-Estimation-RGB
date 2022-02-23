@@ -1,7 +1,13 @@
 import torch
 import torch.nn as nn
 
-from utils.prep_utils import MODEL_NEURONS
+N_KEYPOINTS = 21
+N_IMG_CHANNELS = 3
+RAW_IMG_SIZE = 224
+MODEL_IMG_SIZE = 128
+DATASET_MEANS = [0.3950, 0.4323, 0.2954]
+DATASET_STDS = [0.1966, 0.1734, 0.1836]
+MODEL_NEURONS = 16
 
 
 class ConvBlock(nn.Module):

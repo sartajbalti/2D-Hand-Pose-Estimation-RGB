@@ -5,17 +5,39 @@ import json
 import torch
 from torchvision import transforms
 from torch.utils.data import Dataset
-
-from utils.prep_utils import (
-    projectPoints,
-    vector_to_heatmaps,
-    RAW_IMG_SIZE,
-    MODEL_IMG_SIZE,
-    DATASET_MEANS,
-    DATASET_STDS,
-)
+N_KEYPOINTS = 21
+N_IMG_CHANNELS = 3
+RAW_IMG_SIZE = 224
+MODEL_IMG_SIZE = 128
+DATASET_MEANS = [0.3950, 0.4323, 0.2954]
+DATASET_STDS = [0.1966, 0.1734, 0.1836]
+MODEL_NEURONS = 16
 
 
+def projectPoints(xyz, K):
+    """
+    Projects 3D coordinates into image space.
+    Function taken from https://github.com/lmb-freiburg/freihand
+    """
+    xyz = np.array(xyz)
+    K = np.array(K)
+    uv = np.matmul(K, xyz.T).T
+    return uv[:, :2] / uv[:, -1:]
+
+def vector_to_heatmaps(keypoints):
+    """
+    Creates 2D heatmaps from keypoint locations for a single image
+    Input: array of size N_KEYPOINTS x 2
+    Output: array of size N_KEYPOINTS x MODEL_IMG_SIZE x MODEL_IMG_SIZE
+    """
+    heatmaps = np.zeros([N_KEYPOINTS, MODEL_IMG_SIZE, MODEL_IMG_SIZE])
+    for k, (x, y) in enumerate(keypoints):
+        x, y = int(x * MODEL_IMG_SIZE), int(y * MODEL_IMG_SIZE)
+        if (0 <= x < MODEL_IMG_SIZE) and (0 <= y < MODEL_IMG_SIZE):
+            heatmaps[k, int(y), int(x)] = 1
+
+    heatmaps = blur_heatmaps(heatmaps)
+    return heatmaps
 class FreiHAND(Dataset):
     """
     Class to load FreiHAND dataset. Only training part is used here.
